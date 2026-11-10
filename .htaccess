@@ -1,0 +1,34 @@
+Options -Indexes
+
+# Block direct HTTP access to hidden files, environment configs, and internal directories
+<FilesMatch "^\.(env|env\.example|gitignore|htaccess|user\.ini)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "^(composer\.(json|lock)|phpunit\.xml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Deny internal application paths if DocumentRoot points to project root
+    RewriteRule ^(app|database|memory|routes|storage|tests|vendor)(/|$) - [F,L,NC]
+
+    # Route remaining requests cleanly into /public
+    RewriteCond %{REQUEST_URI} !/public/ [NC]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+

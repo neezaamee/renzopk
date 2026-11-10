@@ -1,0 +1,15 @@
+/vendor/
+/.env
+/storage/uploads/*
+!/storage/uploads/.htaccess
+!/storage/uploads/.gitkeep
+/storage/uploads/*/*
+!/storage/uploads/*/.gitkeep
+/storage/pdfs/*.pdf
+/storage/pdfs/*.tmp
+!/storage/pdfs/.htaccess
+!/storage/pdfs/.gitkeep
+/storage/logs/*.log
+.DS_Store
+Thumbs.db
+
