@@ -24,6 +24,13 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Enforce HTTPS before rewriting into /public so /public never leaks into redirect URLs
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteCond %{HTTP_HOST} !\.test$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Deny internal application paths if DocumentRoot points to project root
     RewriteRule ^(app|database|memory|routes|storage|tests|vendor)(/|$) - [F,L,NC]
 
@@ -31,4 +38,3 @@ Options -Indexes
     RewriteCond %{REQUEST_URI} !/public/ [NC]
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
-

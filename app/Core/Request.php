@@ -124,6 +124,11 @@ final class Request
             return '';
         }
 
+        $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+        if (str_ends_with($dir, '/public') && !str_starts_with($requestPath, $dir)) {
+            $dir = substr($dir, 0, -strlen('/public')) ?: '';
+        }
+
         return $dir;
     }
 }
