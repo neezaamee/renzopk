@@ -44,6 +44,7 @@ $currentCat = (string) old('category', (string) ($item['category'] ?? 'Food'));
         <div class="field">
             <label for="g_image">Image File (for Photo type)</label>
             <input id="g_image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+            <small style="display:block;color:#57534e;margin-top:4px;">Recommended: 1280 × 720 px or 1200 × 800 px (min 800 × 533, 16:9/3:2 landscape, &lt; 250 KB). Auto-converted &amp; resized up to 1280 × 960 WebP.</small>
             <?php if ($isEdit && !empty($item['image_path'])): ?>
                 <div style="margin-top:8px;"><img src="<?= e(media_url($item['image_path'])) ?>" alt="" class="thumb"></div>
             <?php endif; ?>
@@ -51,6 +52,7 @@ $currentCat = (string) old('category', (string) ($item['category'] ?? 'Food'));
         <div class="field">
             <label for="g_youtube">YouTube Video URL or ID (for YouTube type)</label>
             <input id="g_youtube" type="text" name="youtube_id" value="<?= e(old('youtube_id', (string) ($item['youtube_id'] ?? ''))) ?>" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+            <small style="display:block;color:#57534e;margin-top:4px;">Supports watch, youtu.be, shorts, embed URLs, or 11-char ID. Upload 16:9 HD video (Public/Unlisted with embedding enabled) and a 1280 × 720 thumbnail in YouTube Studio.</small>
         </div>
         <div class="field">
             <label><input type="checkbox" name="is_active" value="1" <?= (!$isEdit || !empty($item['is_active'])) ? 'checked' : '' ?>> Visible on Public Gallery</label>

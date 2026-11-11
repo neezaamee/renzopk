@@ -149,18 +149,41 @@ try {
 }
 $assert($resHoneypotBlocked, 'Reservation honeypot blocks bot submission');
 
-// 3. Gallery WebP conversion via GD
+// 3. WebP conversion & proportional downscaling across Sliders, Menu, Deals, and Gallery
 $uploadSvc = new App\Services\UploadService();
-$srcPng = tempnam(sys_get_temp_dir(), 'renzogd') . '.png';
-$dstWebp = tempnam(sys_get_temp_dir(), 'renzowebp') . '.webp';
-$im = imagecreatetruecolor(32, 32);
-imagepng($im, $srcPng);
-imagedestroy($im);
-$converted = $uploadSvc->convertFileToWebp($srcPng, 'image/png', $dstWebp);
 $finfo = new finfo(FILEINFO_MIME_TYPE);
-$assert($converted && is_file($dstWebp) && $finfo->file($dstWebp) === 'image/webp', 'GD converts gallery image to valid WebP');
-@unlink($srcPng);
-@unlink($dstWebp);
+
+$srcSmallPng = tempnam(sys_get_temp_dir(), 'renzogd') . '.png';
+$dstSmallWebp = tempnam(sys_get_temp_dir(), 'renzowebp') . '.webp';
+$imSmall = imagecreatetruecolor(32, 32);
+imagepng($imSmall, $srcSmallPng);
+imagedestroy($imSmall);
+[$menuMaxW, $menuMaxH] = $uploadSvc->maxDimensionsForFolder('menu');
+$convertedSmall = $uploadSvc->convertFileToWebp($srcSmallPng, 'image/png', $dstSmallWebp, 82, $menuMaxW, $menuMaxH);
+$smallInfo = @getimagesize($dstSmallWebp);
+$assert($convertedSmall && is_file($dstSmallWebp) && $finfo->file($dstSmallWebp) === 'image/webp' && $smallInfo !== false && $smallInfo[0] === 32 && $smallInfo[1] === 32, 'GD converts small image to WebP without upscaling');
+@unlink($srcSmallPng);
+@unlink($dstSmallWebp);
+
+$srcLargePng = tempnam(sys_get_temp_dir(), 'renzobig') . '.png';
+$imLarge = imagecreatetruecolor(2400, 1200);
+imagepng($imLarge, $srcLargePng);
+imagedestroy($imLarge);
+$expectedScaled = [
+    'sliders' => [1920, 960],
+    'gallery' => [1280, 640],
+    'deals' => [960, 480],
+    'menu' => [600, 300],
+];
+foreach ($expectedScaled as $folder => [$expectedW, $expectedH]) {
+    [$maxW, $maxH] = $uploadSvc->maxDimensionsForFolder($folder);
+    $dstFolderWebp = tempnam(sys_get_temp_dir(), 'renzo_' . $folder) . '.webp';
+    $ok = $uploadSvc->convertFileToWebp($srcLargePng, 'image/png', $dstFolderWebp, 82, $maxW, $maxH);
+    $dims = @getimagesize($dstFolderWebp);
+    $assert($ok && is_file($dstFolderWebp) && $finfo->file($dstFolderWebp) === 'image/webp' && $dims !== false && $dims[0] === $expectedW && $dims[1] === $expectedH, "GD proportionally downscales {$folder} image to {$expectedW}x{$expectedH} WebP");
+    @unlink($dstFolderWebp);
+}
+@unlink($srcLargePng);
 
 // 4. Launch slider service & CTA sanitization
 $sliderSvc = new App\Services\SliderService(new App\Models\SliderItem($pdo), $uploadSvc);

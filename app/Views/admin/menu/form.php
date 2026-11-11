@@ -41,6 +41,7 @@ $variants = $isEdit ? ($item['variants'] ?? []) : [];
         <div class="field">
             <label for="image">Dish Image (JPEG, PNG, WebP, max 5MB)</label>
             <input id="image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+            <small style="display:block;color:#57534e;margin-top:4px;">Recommended: 600 × 600 px (min 300 × 300, 1:1 square centered plate, &lt; 80 KB). Auto-converted &amp; resized up to 600 × 600 WebP.</small>
             <?php if ($isEdit && !empty($item['image_path'])): ?>
                 <div style="margin-top:8px;"><img src="<?= e(media_url($item['image_path'])) ?>" alt="" class="thumb"></div>
             <?php endif; ?>

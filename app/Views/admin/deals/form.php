@@ -46,6 +46,7 @@ $currentType = (string) old('type', (string) ($deal['type'] ?? 'time_limited'));
             <div class="field">
                 <label for="d_image">Promo Image (optional)</label>
                 <input id="d_image" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+                <small style="display:block;color:#57534e;margin-top:4px;">Recommended: 960 × 540 px (min 640 × 360, 16:9 landscape, &lt; 150 KB, no text baked onto edges). Auto-converted &amp; resized up to 960 × 540 WebP.</small>
                 <?php if ($isEdit && !empty($deal['image_path'])): ?>
                     <div style="margin-top:8px;"><img src="<?= e(media_url($deal['image_path'])) ?>" alt="" class="thumb"></div>
                 <?php endif; ?>

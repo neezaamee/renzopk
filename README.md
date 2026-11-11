@@ -31,3 +31,6 @@ Run the automated PHP verification suite:
 php tests/run.php
 ```
 
+## CMS Media Guide
+Recommended image dimensions, framing rules, automatic WebP optimization limits, and YouTube gallery guidelines are documented in [docs/cms-media-guide.md](docs/cms-media-guide.md).
+
