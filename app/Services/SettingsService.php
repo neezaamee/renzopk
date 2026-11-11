@@ -97,4 +97,42 @@ final class SettingsService
             (new MenuPdfService())->regenerateSafely();
         }
     }
+
+    /**
+     * Parse multiline CMS opening_hours text into clean [day, hours] table rows.
+     *
+     * @return list<array{day: string, hours: string}>
+     */
+    public static function parseOpeningHours(string $raw): array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', trim($raw)) ?: [];
+        $rows = [];
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            // Match explicit label separator like "Tue - Thu: 12:00 PM - 10:00 PM" without splitting "12:00"
+            if (preg_match('/^(.+?)(?<!\d):\s+(.+)$/', $trimmed, $m) === 1) {
+                $rows[] = ['day' => trim($m[1]), 'hours' => trim($m[2])];
+                continue;
+            }
+
+            if (preg_match('/^(.+?)\s*\|\s*(.+)$/', $trimmed, $m) === 1) {
+                $rows[] = ['day' => trim($m[1]), 'hours' => trim($m[2])];
+                continue;
+            }
+
+            if (preg_match('/^((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*(?:\s*(?:-|–|&|,|to)\s*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*)?)\s+(.+)$/iu', $trimmed, $m) === 1) {
+                $rows[] = ['day' => trim($m[1]), 'hours' => trim($m[2])];
+                continue;
+            }
+
+            $rows[] = ['day' => $trimmed, 'hours' => ''];
+        }
+
+        return $rows;
+    }
 }

@@ -374,5 +374,34 @@ $assert(
 
 @unlink($pdfPath);
 
+// 12. Dynamic CMS Opening Hours parsing & Contact page rendering
+$parsedHours = App\Services\SettingsService::parseOpeningHours(
+    "Mon - Thu: 1:00 PM - 11:00 PM\nFriday 3:00 PM - 12:30 AM\nPublic Holidays Open"
+);
+$assert(
+    count($parsedHours) === 3
+    && $parsedHours[0]['day'] === 'Mon - Thu' && $parsedHours[0]['hours'] === '1:00 PM - 11:00 PM'
+    && $parsedHours[1]['day'] === 'Friday' && $parsedHours[1]['hours'] === '3:00 PM - 12:30 AM'
+    && $parsedHours[2]['day'] === 'Public Holidays Open' && $parsedHours[2]['hours'] === '',
+    'SettingsService::parseOpeningHours splits day/hours accurately without breaking time colons'
+);
+$contactHtml = App\Core\View::render('public/contact', [
+    'pageTitle' => 'Contact',
+    'settings' => [
+        'restaurant_name' => 'Renzo',
+        'opening_hours' => "Mon - Sun: 1:00 PM - 12:00 AM\nFriday Break: 1:00 PM - 2:30 PM",
+        'contact_address' => 'Lahore',
+        'contact_phone' => '123',
+        'contact_email' => 'hi@renzopk.com',
+    ],
+], 'layouts/main');
+$compactContactHtml = (string) preg_replace('/>\s+</', '><', $contactHtml);
+$assert(
+    str_contains($compactContactHtml, '<td>Mon - Sun</td><td>1:00 PM - 12:00 AM</td>')
+    && str_contains($compactContactHtml, '<td>Friday Break</td><td>1:00 PM - 2:30 PM</td>')
+    && !str_contains($compactContactHtml, '<td>Wednesday</td><td>12:00 PM &ndash; 10:00 PM</td>'),
+    'Contact page renders opening hours dynamically from CMS settings'
+);
+
 echo "TESTS PASSED: $passed assertions\n";
 

@@ -54,23 +54,42 @@
             <div>
                 <div class="form-panel" style="margin-bottom:22px;">
                     <h2 style="margin-top:0;color:var(--gold);">Opening Hours</h2>
-                    <table class="hours-table">
-                        <thead>
-                            <tr>
-                                <th>Day</th>
-                                <th>Hours</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>Monday</td><td>Closed</td></tr>
-                            <tr><td>Tuesday</td><td>12:00 PM &ndash; 10:00 PM</td></tr>
-                            <tr><td>Wednesday</td><td>12:00 PM &ndash; 10:00 PM</td></tr>
-                            <tr><td>Thursday</td><td>12:00 PM &ndash; 10:00 PM</td></tr>
-                            <tr><td>Friday</td><td>12:00 PM &ndash; 11:30 PM</td></tr>
-                            <tr><td>Saturday</td><td>12:00 PM &ndash; 11:30 PM</td></tr>
-                            <tr><td>Sunday</td><td>12:00 PM &ndash; 11:00 PM</td></tr>
-                        </tbody>
-                    </table>
+                    <?php
+                    $openingRows = $hoursRows ?? \App\Services\SettingsService::parseOpeningHours((string) ($settings['opening_hours'] ?? ''));
+                    $hasPairColumns = false;
+                    foreach ($openingRows as $hr) {
+                        if (($hr['hours'] ?? '') !== '') {
+                            $hasPairColumns = true;
+                            break;
+                        }
+                    }
+                    ?>
+                    <?php if (empty($openingRows)): ?>
+                        <p class="muted" style="margin:0;">Opening hours will be announced shortly.</p>
+                    <?php else: ?>
+                        <table class="hours-table">
+                            <?php if ($hasPairColumns): ?>
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Hours</th>
+                                    </tr>
+                                </thead>
+                            <?php endif; ?>
+                            <tbody>
+                                <?php foreach ($openingRows as $row): ?>
+                                    <tr>
+                                        <?php if (($row['hours'] ?? '') !== ''): ?>
+                                            <td><?= e($row['day']) ?></td>
+                                            <td><?= e($row['hours']) ?></td>
+                                        <?php else: ?>
+                                            <td colspan="2"><?= e($row['day']) ?></td>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
                     <p class="muted" style="margin-bottom:0;margin-top:14px;">
                         <strong>Address:</strong> <?= e($settings['contact_address'] ?? '124 Harbor Lane, Culinary District') ?><br>
                         <strong>Phone:</strong> <?= e($settings['contact_phone'] ?? '+1 (555) 010-2040') ?><br>

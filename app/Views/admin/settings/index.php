@@ -45,7 +45,8 @@
         </div>
         <div class="field">
             <label for="st_hours">Opening Hours</label>
-            <textarea id="st_hours" name="opening_hours" rows="3"><?= e($allSettings['opening_hours'] ?? '') ?></textarea>
+            <textarea id="st_hours" name="opening_hours" rows="4"><?= e($allSettings['opening_hours'] ?? '') ?></textarea>
+            <small style="display:block;color:#57534e;margin-top:4px;">Enter one line per schedule row, e.g. <code>Tue - Thu: 12:00 PM - 10:00 PM</code>. Automatically reflected on Contact, Home, and Footer.</small>
         </div>
         <div class="form-grid">
             <div class="field">

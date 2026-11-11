@@ -7,14 +7,18 @@ namespace App\Controllers;
 use App\Core\Request;
 use App\Core\Response;
 use App\Services\ContactService;
+use App\Services\SettingsService;
 
 final class ContactController extends Controller
 {
     public function index(Request $request): Response
     {
+        $settings = (new SettingsService())->all();
+
         return $this->renderPublic('public/contact', [
             'pageTitle' => 'Contact & Reservations',
             'metaDescription' => 'Contact Renzo for dining inquiries, private events, opening hours, and directions.',
+            'hoursRows' => SettingsService::parseOpeningHours((string) ($settings['opening_hours'] ?? '')),
         ]);
     }
 
