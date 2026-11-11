@@ -36,5 +36,31 @@ final class SliderItem extends Model
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->paginateSql(
+            '*',
+            'slider_items',
+            [],
+            [],
+            ['title', 'subtitle', 'cta_text', 'cta_url'],
+            (string) ($options['q'] ?? ''),
+            [
+                'title' => 'title',
+                'cta_text' => 'cta_text',
+                'sort_order' => 'sort_order',
+                'is_active' => 'is_active',
+            ],
+            'sort_order ASC, id ASC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }
 

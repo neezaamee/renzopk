@@ -1,4 +1,4 @@
-<div class="card" style="max-width:680px;">
+<div class="card card-form">
     <p><strong>Guest:</strong> <?= e($reservation['customer_name']) ?></p>
     <p><strong>Phone:</strong> <?= e($reservation['customer_phone']) ?></p>
     <p><strong>Email:</strong> <?= e($reservation['customer_email'] ?? '—') ?></p>

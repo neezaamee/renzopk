@@ -36,6 +36,25 @@ abstract class Controller
         return Response::html($html);
     }
 
+    protected function respondAdminTable(
+        Request $request,
+        string $view,
+        string $pageTitle,
+        array $tableConfig,
+        array $extraData = []
+    ): Response {
+        if ($request->expectsJson()) {
+            return Response::json([
+                'table' => $tableConfig,
+            ]);
+        }
+
+        return $this->renderAdmin($view, array_merge($extraData, [
+            'pageTitle' => $pageTitle,
+            'tableConfig' => $tableConfig,
+        ]));
+    }
+
     protected function renderAuth(string $view, array $data = []): Response
     {
         $settings = (new SettingsService())->all();

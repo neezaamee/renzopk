@@ -3,11 +3,7 @@ $currency = (string) ($settings['currency_symbol'] ?? 'Rs. ');
 $slideCount = count($slides);
 ?>
 
-<section class="hero-slider" aria-label="Featured Highlights">
-    <?php foreach ($slides as $idx => $slide): ?>
-        <input type="radio" name="hero_slide" id="hero-slide-<?= e((string) ($idx + 1)) ?>" class="hero-radio">
-    <?php endforeach; ?>
-
+<section class="hero-slider" aria-label="Featured Highlights"<?= $slideCount > 1 ? ' data-hero-slider data-hero-interval="5000"' : '' ?>>
     <div class="hero-slides">
         <?php foreach ($slides as $idx => $slide): ?>
             <?php
@@ -16,13 +12,13 @@ $slideCount = count($slides);
             $ctaUrl = (string) ($slide['cta_url'] ?? '/menu');
             $ctaHref = (str_starts_with($ctaUrl, '#') || str_starts_with($ctaUrl, 'http')) ? $ctaUrl : url($ctaUrl);
             ?>
-            <div class="hero-slide hero-slide-bg-<?= e((string) $bgIndex) ?>">
+            <div class="hero-slide hero-slide-bg-<?= e((string) $bgIndex) ?><?= $idx === 0 ? ' is-active' : '' ?>" data-hero-slide="<?= e((string) $idx) ?>" aria-hidden="<?= $idx === 0 ? 'false' : 'true' ?>">
                 <?php if (!empty($slide['image_path'])): ?>
                     <img
                         src="<?= e(media_url($slide['image_path'])) ?>"
                         alt="<?= e($slide['alt_text'] ?: $slideHeading) ?>"
                         class="hero-slide-img"
-                        <?= $idx === 0 ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"' ?>
+                        <?= $idx === 0 ? 'fetchpriority="high" decoding="async"' : 'decoding="async"' ?>
                     >
                 <?php endif; ?>
                 <div class="container">
@@ -44,9 +40,17 @@ $slideCount = count($slides);
     </div>
 
     <?php if ($slideCount > 1): ?>
+        <button type="button" class="hero-arrow hero-arrow-prev" data-hero-prev aria-label="Previous slide">&#8249;</button>
+        <button type="button" class="hero-arrow hero-arrow-next" data-hero-next aria-label="Next slide">&#8250;</button>
         <div class="hero-dots" aria-label="Slide controls">
             <?php foreach ($slides as $idx => $slide): ?>
-                <label for="hero-slide-<?= e((string) ($idx + 1)) ?>" class="hero-dot" aria-label="Slide <?= e((string) ($idx + 1)) ?>"></label>
+                <button
+                    type="button"
+                    class="hero-dot<?= $idx === 0 ? ' is-active' : '' ?>"
+                    data-hero-dot="<?= e((string) $idx) ?>"
+                    aria-label="Slide <?= e((string) ($idx + 1)) ?>"
+                    aria-pressed="<?= $idx === 0 ? 'true' : 'false' ?>"
+                ></button>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>

@@ -1,4 +1,4 @@
-<div class="card" style="max-width:780px;">
+<div class="card card-form">
     <form method="POST" action="<?= e(url('/admin/settings')) ?>">
         <?= csrf_field() ?>
         <div class="form-grid">

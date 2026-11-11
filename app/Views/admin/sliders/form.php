@@ -1,5 +1,5 @@
 <?php $isEdit = is_array($slide); ?>
-<div class="card" style="max-width:680px;">
+<div class="card card-form">
     <form method="POST" action="<?= e(url($actionUrl)) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="field">

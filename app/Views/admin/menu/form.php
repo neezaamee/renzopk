@@ -3,7 +3,7 @@ $isEdit = is_array($item);
 $selectedTagIds = $isEdit ? ($item['tag_ids'] ?? []) : (is_array(\App\Core\Session::getOld('tag_ids', [])) ? \App\Core\Session::getOld('tag_ids', []) : []);
 $variants = $isEdit ? ($item['variants'] ?? []) : [];
 ?>
-<div class="card">
+<div class="card card-form">
     <form method="POST" action="<?= e(url($actionUrl)) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="form-grid">

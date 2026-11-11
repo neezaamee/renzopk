@@ -1,4 +1,4 @@
-<div class="card" style="max-width:700px;">
+<div class="card card-form">
     <p><strong>From:</strong> <?= e($message['name']) ?> &lt;<?= e($message['email']) ?>&gt;</p>
     <p><strong>Phone:</strong> <?= e($message['phone'] ?? '—') ?></p>
     <p><strong>Type:</strong> <span class="pill"><?= e(ucfirst((string) $message['inquiry_type'])) ?></span></p>

@@ -7,16 +7,21 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\DealService;
 
 final class DealController extends Controller
 {
     public function index(Request $request): Response
     {
-        return $this->renderAdmin('admin/deals/index', [
-            'pageTitle' => 'Manage Deals & Coupons',
-            'deals' => (new DealService())->getAdminDealsWithStatus(),
-        ]);
+        $type = trim((string) $request->query('type', ''));
+        $paginated = (new DealService())->paginateAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE),
+            $type !== '' ? $type : null
+        );
+        $table = (new AdminTableService())->buildDealsTable($paginated, $type);
+
+        return $this->respondAdminTable($request, 'admin/deals/index', 'Manage Deals & Coupons', $table);
     }
 
     public function create(Request $request): Response

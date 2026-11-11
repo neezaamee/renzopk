@@ -46,6 +46,22 @@ final class DealService
         return $deals;
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $type = null): array
+    {
+        $filteredType = ($type !== null && in_array($type, self::ALLOWED_TYPES, true)) ? $type : null;
+        $result = $this->deals->paginateAdmin($options, $filteredType);
+        $now = time();
+
+        foreach ($result['items'] as &$deal) {
+            $deal['computed_status'] = $this->computeStatus($deal, $now);
+        }
+
+        return $result;
+    }
+
     public function find(int $id): ?array
     {
         return $this->deals->find($id);

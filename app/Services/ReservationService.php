@@ -92,6 +92,18 @@ final class ReservationService
         return $this->reservations->allWithAdmin($status);
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $status = null): array
+    {
+        if ($status !== null && $status !== '' && !in_array($status, self::STATUSES, true)) {
+            $status = null;
+        }
+
+        return $this->reservations->paginateAdmin($options, $status);
+    }
+
     public function findAdmin(int $id): ?array
     {
         return $this->reservations->findWithAdmin($id);

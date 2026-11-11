@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\AuthService;
 use App\Services\ReservationService;
 
@@ -15,13 +16,17 @@ final class ReservationController extends Controller
     public function index(Request $request): Response
     {
         $status = trim((string) $request->query('status', ''));
+        $paginated = (new ReservationService())->paginateAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE),
+            $status !== '' ? $status : null
+        );
+        $table = (new AdminTableService())->buildReservationsTable(
+            $paginated,
+            $status,
+            ReservationService::STATUSES
+        );
 
-        return $this->renderAdmin('admin/reservations/index', [
-            'pageTitle' => 'Reservations',
-            'reservations' => (new ReservationService())->listAdmin($status !== '' ? $status : null),
-            'selectedStatus' => $status,
-            'statuses' => ReservationService::STATUSES,
-        ]);
+        return $this->respondAdminTable($request, 'admin/reservations/index', 'Reservations', $table);
     }
 
     public function show(Request $request, string $id): Response

@@ -104,14 +104,38 @@ final class MenuService
         return $this->items->allWithCategory();
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateItemsAdmin(array $options = []): array
+    {
+        return $this->items->paginateAdmin($options);
+    }
+
     public function getAllCategoriesAdmin(): array
     {
         return $this->categories->allOrderedWithItemCounts();
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateCategoriesAdmin(array $options = []): array
+    {
+        return $this->categories->paginateAdmin($options);
+    }
+
     public function getAllTags(): array
     {
         return $this->tags->all('name', 'ASC');
+    }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateTagsAdmin(array $options = []): array
+    {
+        return $this->tags->paginateAdmin($options);
     }
 
     public function findCategory(int $id): ?array

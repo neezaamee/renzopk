@@ -74,6 +74,14 @@ final class ContactService
         return $this->messages->allOrdered($filter);
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $filter = null): array
+    {
+        return $this->messages->paginateAdmin($options, $filter);
+    }
+
     public function viewAndMarkRead(int $id): ?array
     {
         $message = $this->messages->find($id);

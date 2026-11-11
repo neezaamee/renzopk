@@ -23,6 +23,14 @@ final class AdminUserService
         return $this->admins->all('id', 'ASC');
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->admins->paginateAdmin($options);
+    }
+
     public function create(array $input): int
     {
         $name = trim((string) ($input['name'] ?? ''));

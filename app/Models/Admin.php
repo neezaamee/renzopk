@@ -43,5 +43,32 @@ final class Admin extends Model
         $stmt = $this->db->prepare('UPDATE admins SET last_login_at = NOW() WHERE id = :id');
         $stmt->execute(['id' => $id]);
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->paginateSql(
+            '*',
+            'admins',
+            [],
+            [],
+            ['name', 'email', 'role'],
+            (string) ($options['q'] ?? ''),
+            [
+                'name' => 'name',
+                'email' => 'email',
+                'role' => 'role',
+                'is_active' => 'is_active',
+                'last_login_at' => 'last_login_at',
+            ],
+            'id ASC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }
 

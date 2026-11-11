@@ -7,16 +7,21 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\GalleryService;
 
 final class GalleryController extends Controller
 {
     public function index(Request $request): Response
     {
-        return $this->renderAdmin('admin/gallery/index', [
-            'pageTitle' => 'Manage Gallery',
-            'items' => (new GalleryService())->getAllAdmin(),
-        ]);
+        $type = trim((string) $request->query('type', ''));
+        $paginated = (new GalleryService())->paginateAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE),
+            $type !== '' ? $type : null
+        );
+        $table = (new AdminTableService())->buildGalleryTable($paginated, $type);
+
+        return $this->respondAdminTable($request, 'admin/gallery/index', 'Manage Gallery', $table);
     }
 
     public function create(Request $request): Response

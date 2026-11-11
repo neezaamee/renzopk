@@ -7,18 +7,21 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\MenuService;
+use App\Services\SettingsService;
 
 final class MenuController extends Controller
 {
     public function index(Request $request): Response
     {
-        $menu = new MenuService();
+        $paginated = (new MenuService())->paginateItemsAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE)
+        );
+        $currency = (string) ((new SettingsService())->all()['currency_symbol'] ?? 'Rs. ');
+        $table = (new AdminTableService())->buildMenuItemsTable($paginated, $currency);
 
-        return $this->renderAdmin('admin/menu/index', [
-            'pageTitle' => 'Manage Menu Items',
-            'items' => $menu->getAllItemsAdmin(),
-        ]);
+        return $this->respondAdminTable($request, 'admin/menu/index', 'Manage Menu Items', $table);
     }
 
     public function create(Request $request): Response

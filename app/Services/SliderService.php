@@ -29,6 +29,14 @@ final class SliderService
         return $this->sliders->allOrdered();
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->sliders->paginateAdmin($options);
+    }
+
     public function find(int $id): ?array
     {
         return $this->sliders->find($id);

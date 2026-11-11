@@ -79,4 +79,38 @@ final class Deal extends Model
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $type = null): array
+    {
+        $where = [];
+        $params = [];
+        if ($type !== null && $type !== '') {
+            $where[] = 'type = :type';
+            $params['type'] = $type;
+        }
+
+        return $this->paginateSql(
+            '*',
+            'deals',
+            $where,
+            $params,
+            ['title', 'type', 'discount_label', 'coupon_code', 'description'],
+            (string) ($options['q'] ?? ''),
+            [
+                'title' => 'title',
+                'type' => 'type',
+                'end_datetime' => 'end_datetime',
+                'is_active' => 'is_active',
+                'sort_order' => 'sort_order',
+            ],
+            'sort_order ASC, id DESC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }

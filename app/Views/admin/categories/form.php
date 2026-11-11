@@ -1,5 +1,5 @@
 <?php $isEdit = is_array($category); ?>
-<div class="card" style="max-width:640px;">
+<div class="card card-form">
     <form method="POST" action="<?= e(url($actionUrl)) ?>">
         <?= csrf_field() ?>
         <div class="field">

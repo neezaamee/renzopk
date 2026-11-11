@@ -7,16 +7,19 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\MenuService;
 
 final class MenuCategoryController extends Controller
 {
     public function index(Request $request): Response
     {
-        return $this->renderAdmin('admin/categories/index', [
-            'pageTitle' => 'Menu Categories',
-            'categories' => (new MenuService())->getAllCategoriesAdmin(),
-        ]);
+        $paginated = (new MenuService())->paginateCategoriesAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE)
+        );
+        $table = (new AdminTableService())->buildCategoriesTable($paginated);
+
+        return $this->respondAdminTable($request, 'admin/categories/index', 'Menu Categories', $table);
     }
 
     public function create(Request $request): Response

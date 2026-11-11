@@ -19,10 +19,23 @@ final class RoleMiddleware
     {
         $admin = (new AuthService())->currentAdmin();
         if ($admin === null) {
+            if ($request->expectsJson()) {
+                return Response::json([
+                    'error' => 'Session expired. Please sign in again.',
+                    'redirect' => url('/admin/login'),
+                ], 401);
+            }
+
             return Response::redirect('/admin/login');
         }
 
         if (!in_array($admin['role'] ?? '', $this->allowedRoles, true)) {
+            if ($request->expectsJson()) {
+                return Response::json([
+                    'error' => 'You do not have permission to access this resource.',
+                ], 403);
+            }
+
             return Response::abort(403, 'You do not have permission to access this resource.');
         }
 

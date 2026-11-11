@@ -1,4 +1,165 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Dynamic hero slider (supports 1..N slides with zero dark screen / decode gap)
+    const heroRoot = document.querySelector('[data-hero-slider]');
+    if (heroRoot) {
+        const slides = Array.from(heroRoot.querySelectorAll('[data-hero-slide]'));
+        const dots = Array.from(heroRoot.querySelectorAll('[data-hero-dot]'));
+        const prevBtn = heroRoot.querySelector('[data-hero-prev]');
+        const nextBtn = heroRoot.querySelector('[data-hero-next]');
+        const intervalMs = Math.max(2500, parseInt(heroRoot.dataset.heroInterval || '5000', 10) || 5000);
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (slides.length > 1) {
+            let current = Math.max(0, slides.findIndex((el) => el.classList.contains('is-active')));
+            let timerId = null;
+            let cleanupId = null;
+            let transitionToken = 0;
+
+            const syncDots = (index) => {
+                dots.forEach((dot, idx) => {
+                    const active = idx === index;
+                    dot.classList.toggle('is-active', active);
+                    dot.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+            };
+
+            const preloadImage = (slide) => {
+                const img = slide ? slide.querySelector('img') : null;
+                if (!img) {
+                    return Promise.resolve();
+                }
+                if (img.complete && img.naturalWidth > 0) {
+                    return typeof img.decode === 'function' ? img.decode().catch(() => {}) : Promise.resolve();
+                }
+                return new Promise((resolve) => {
+                    const done = () => resolve();
+                    img.addEventListener('load', done, { once: true });
+                    img.addEventListener('error', done, { once: true });
+                    setTimeout(done, 180);
+                });
+            };
+
+            const goTo = async (targetIndex) => {
+                const nextIndex = ((targetIndex % slides.length) + slides.length) % slides.length;
+                if (nextIndex === current) {
+                    return;
+                }
+
+                const token = ++transitionToken;
+                const incoming = slides[nextIndex];
+                await preloadImage(incoming);
+                if (token !== transitionToken) {
+                    return;
+                }
+
+                const outgoing = slides[current];
+                clearTimeout(cleanupId);
+
+                slides.forEach((slide) => {
+                    if (slide !== outgoing && slide !== incoming) {
+                        slide.classList.remove('is-active', 'is-prev', 'is-entering');
+                        slide.setAttribute('aria-hidden', 'true');
+                    }
+                });
+
+                outgoing.classList.remove('is-entering');
+                outgoing.classList.add('is-prev');
+                outgoing.setAttribute('aria-hidden', 'true');
+
+                incoming.setAttribute('aria-hidden', 'false');
+                if (reduceMotion) {
+                    incoming.classList.add('is-active');
+                    outgoing.classList.remove('is-active', 'is-prev');
+                } else {
+                    incoming.classList.add('is-entering');
+                    void incoming.offsetWidth;
+                    requestAnimationFrame(() => {
+                        incoming.classList.remove('is-entering');
+                        incoming.classList.add('is-active');
+                    });
+
+                    cleanupId = setTimeout(() => {
+                        outgoing.classList.remove('is-active', 'is-prev');
+                    }, 700);
+                }
+
+                current = nextIndex;
+                syncDots(current);
+                preloadImage(slides[(current + 1) % slides.length]);
+            };
+
+            const startTimer = () => {
+                clearInterval(timerId);
+                timerId = setInterval(() => {
+                    goTo(current + 1);
+                }, intervalMs);
+            };
+
+            const stopTimer = () => {
+                clearInterval(timerId);
+                timerId = null;
+            };
+
+            dots.forEach((dot) => {
+                dot.addEventListener('click', () => {
+                    const idx = parseInt(dot.dataset.heroDot || '0', 10) || 0;
+                    goTo(idx);
+                    startTimer();
+                });
+            });
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    goTo(current - 1);
+                    startTimer();
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    goTo(current + 1);
+                    startTimer();
+                });
+            }
+
+            heroRoot.addEventListener('mouseenter', stopTimer);
+            heroRoot.addEventListener('mouseleave', startTimer);
+            heroRoot.addEventListener('focusin', stopTimer);
+            heroRoot.addEventListener('focusout', (event) => {
+                if (!heroRoot.contains(event.relatedTarget)) {
+                    startTimer();
+                }
+            });
+
+            let touchStartX = null;
+            heroRoot.addEventListener('touchstart', (event) => {
+                touchStartX = event.touches[0] ? event.touches[0].clientX : null;
+            }, { passive: true });
+            heroRoot.addEventListener('touchend', (event) => {
+                if (touchStartX === null || !event.changedTouches[0]) {
+                    return;
+                }
+                const deltaX = event.changedTouches[0].clientX - touchStartX;
+                touchStartX = null;
+                if (Math.abs(deltaX) > 45) {
+                    goTo(deltaX < 0 ? current + 1 : current - 1);
+                    startTimer();
+                }
+            }, { passive: true });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopTimer();
+                } else {
+                    startTimer();
+                }
+            });
+
+            preloadImage(slides[1]);
+            startTimer();
+        }
+    }
+
     const navToggle = document.getElementById('nav-toggle');
     if (navToggle) {
         document.querySelectorAll('.mobile-drawer a').forEach((link) => {

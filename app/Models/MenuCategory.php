@@ -49,5 +49,33 @@ final class MenuCategory extends Model
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->paginateSql(
+            'c.*, COUNT(i.id) AS items_count',
+            'menu_categories c LEFT JOIN menu_items i ON i.category_id = c.id',
+            [],
+            [],
+            ['c.name', 'c.description'],
+            (string) ($options['q'] ?? ''),
+            [
+                'sort_order' => 'c.sort_order',
+                'name' => 'c.name',
+                'items_count' => 'COUNT(i.id)',
+                'is_active' => 'c.is_active',
+            ],
+            'c.sort_order ASC, c.id ASC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10),
+            'c.id',
+            'c.id'
+        );
+    }
 }
 

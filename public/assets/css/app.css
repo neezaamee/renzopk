@@ -235,19 +235,13 @@ a:hover {
     color: var(--brown-950);
 }
 
-/* CSS-Only Fade Hero Slider (Autoplay 5s per slide = 15s cycle) */
+/* Seamless Dynamic-Count Fade Hero Slider */
 .hero-slider {
     position: relative;
     min-height: 490px;
     background: var(--brown-950);
     overflow: hidden;
     border-bottom: 1px solid var(--border);
-}
-
-.hero-radio {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
 }
 
 .hero-slides {
@@ -261,8 +255,33 @@ a:hover {
     display: flex;
     align-items: center;
     opacity: 0;
+    visibility: hidden;
     z-index: 1;
-    transition: opacity 0.8s ease;
+    pointer-events: none;
+    transition: opacity 0.65s ease;
+    will-change: opacity;
+}
+
+.hero-slide.is-prev {
+    opacity: 1;
+    visibility: visible;
+    z-index: 1;
+    transition: none;
+}
+
+.hero-slide.is-entering {
+    opacity: 0;
+    visibility: visible;
+    z-index: 2;
+    transition: none;
+}
+
+.hero-slide.is-active,
+.hero-slide:only-child {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+    pointer-events: auto;
 }
 
 .hero-slide-img {
@@ -306,41 +325,6 @@ a:hover {
                 linear-gradient(135deg, #140d09 0%, #2e1f16 50%, #1d140f 100%);
 }
 
-.hero-slide:nth-child(1) { animation: heroFade1 15s infinite; }
-.hero-slide:nth-child(2) { animation: heroFade2 15s infinite; }
-.hero-slide:nth-child(3) { animation: heroFade3 15s infinite; }
-
-@keyframes heroFade1 {
-    0%, 28% { opacity: 1; z-index: 2; }
-    35%, 94% { opacity: 0; z-index: 1; }
-    100% { opacity: 1; z-index: 2; }
-}
-
-@keyframes heroFade2 {
-    0%, 28% { opacity: 0; z-index: 1; }
-    34%, 62% { opacity: 1; z-index: 2; }
-    68%, 100% { opacity: 0; z-index: 1; }
-}
-
-@keyframes heroFade3 {
-    0%, 62% { opacity: 0; z-index: 1; }
-    68%, 95% { opacity: 1; z-index: 2; }
-    100% { opacity: 0; z-index: 1; }
-}
-
-.hero-radio:checked ~ .hero-slides .hero-slide {
-    animation: none;
-    opacity: 0;
-    z-index: 1;
-}
-
-#hero-slide-1:checked ~ .hero-slides .hero-slide:nth-child(1),
-#hero-slide-2:checked ~ .hero-slides .hero-slide:nth-child(2),
-#hero-slide-3:checked ~ .hero-slides .hero-slide:nth-child(3) {
-    opacity: 1;
-    z-index: 2;
-}
-
 .hero-eyebrow {
     display: inline-block;
     font-size: 0.8rem;
@@ -362,6 +346,35 @@ a:hover {
     margin: 0 0 26px;
 }
 
+.hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    background: rgba(17, 11, 8, 0.55);
+    color: var(--cream);
+    font-size: 1.5rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.hero-arrow:hover {
+    background: rgba(17, 11, 8, 0.85);
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.hero-arrow-prev { left: 16px; }
+.hero-arrow-next { right: 16px; }
+
 .hero-dots {
     position: absolute;
     bottom: 20px;
@@ -375,6 +388,7 @@ a:hover {
 .hero-dot {
     width: 12px;
     height: 12px;
+    padding: 0;
     border-radius: 999px;
     border: 1px solid var(--gold);
     background: rgba(17, 11, 8, 0.7);
@@ -382,39 +396,17 @@ a:hover {
     transition: background-color 0.25s ease, transform 0.25s ease;
 }
 
-.hero-dot:nth-child(1) { animation: dotCycle1 15s infinite; }
-.hero-dot:nth-child(2) { animation: dotCycle2 15s infinite; }
-.hero-dot:nth-child(3) { animation: dotCycle3 15s infinite; }
-
-@keyframes dotCycle1 {
-    0%, 30% { background: var(--gold); transform: scale(1.15); }
-    35%, 95% { background: rgba(17, 11, 8, 0.7); transform: scale(1); }
-    100% { background: var(--gold); transform: scale(1.15); }
-}
-
-@keyframes dotCycle2 {
-    0%, 30% { background: rgba(17, 11, 8, 0.7); transform: scale(1); }
-    35%, 64% { background: var(--gold); transform: scale(1.15); }
-    69%, 100% { background: rgba(17, 11, 8, 0.7); transform: scale(1); }
-}
-
-@keyframes dotCycle3 {
-    0%, 64% { background: rgba(17, 11, 8, 0.7); transform: scale(1); }
-    69%, 96% { background: var(--gold); transform: scale(1.15); }
-    100% { background: rgba(17, 11, 8, 0.7); transform: scale(1); }
-}
-
-.hero-radio:checked ~ .hero-dots .hero-dot {
-    animation: none;
-    background: rgba(17, 11, 8, 0.7);
-    transform: scale(1);
-}
-
-#hero-slide-1:checked ~ .hero-dots label[for="hero-slide-1"],
-#hero-slide-2:checked ~ .hero-dots label[for="hero-slide-2"],
-#hero-slide-3:checked ~ .hero-dots label[for="hero-slide-3"] {
+.hero-dot.is-active {
     background: var(--gold);
     transform: scale(1.15);
+}
+
+@media (max-width: 640px) {
+    .hero-arrow { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-slide { transition: none; }
 }
 
 /* Sections & Grids */

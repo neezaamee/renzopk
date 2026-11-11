@@ -72,6 +72,54 @@ final class Request
         return $this->query[$key] ?? $default;
     }
 
+    public function queryInt(string $key, int $default, int $min = 1, int $max = 100): int
+    {
+        $raw = $this->query[$key] ?? null;
+        if ($raw === null || $raw === '' || !is_numeric($raw)) {
+            return $default;
+        }
+
+        return max($min, min($max, (int) $raw));
+    }
+
+    /**
+     * @param list<int> $allowedPerPage
+     * @return array{page: int, per_page: int, q: string, sort: string, dir: string}
+     */
+    public function tableParams(array $allowedPerPage = [10, 25, 50, 100], int $defaultPerPage = 10): array
+    {
+        $page = $this->queryInt('page', 1, 1, 100000);
+        $perPage = $this->queryInt('per_page', $defaultPerPage, 1, max($allowedPerPage));
+        if (!in_array($perPage, $allowedPerPage, true)) {
+            $perPage = $defaultPerPage;
+        }
+
+        $q = trim((string) ($this->query['q'] ?? ''));
+        $sort = trim((string) ($this->query['sort'] ?? ''));
+        $dir = strtolower(trim((string) ($this->query['dir'] ?? 'asc'))) === 'desc' ? 'desc' : 'asc';
+
+        return [
+            'page' => $page,
+            'per_page' => $perPage,
+            'q' => $q,
+            'sort' => $sort,
+            'dir' => $dir,
+        ];
+    }
+
+    public function expectsJson(): bool
+    {
+        if (($this->query['format'] ?? '') === 'json') {
+            return true;
+        }
+
+        if (strtolower((string) ($this->header('X-Requested-With') ?? '')) === 'xmlhttprequest') {
+            return true;
+        }
+
+        return str_contains(strtolower((string) ($this->header('Accept') ?? '')), 'application/json');
+    }
+
     public function input(string $key, mixed $default = null): mixed
     {
         return $this->post[$key] ?? $this->query[$key] ?? $default;

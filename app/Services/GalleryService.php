@@ -36,6 +36,15 @@ final class GalleryService
         return $this->gallery->allOrdered();
     }
 
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $type = null): array
+    {
+        $filteredType = ($type !== null && in_array($type, self::ALLOWED_TYPES, true)) ? $type : null;
+        return $this->gallery->paginateAdmin($options, $filteredType);
+    }
+
     public function find(int $id): ?array
     {
         return $this->gallery->find($id);

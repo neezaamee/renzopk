@@ -41,6 +41,20 @@ final class Response
         );
     }
 
+    public static function json(array $payload, int $status = 200): self
+    {
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+
+        return new self(
+            content: $json === false ? '{}' : $json,
+            status: $status,
+            headers: [
+                'Content-Type' => 'application/json; charset=UTF-8',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ],
+        );
+    }
+
     public static function redirect(string $path, int $status = 302): self
     {
         $target = str_starts_with($path, 'http://') || str_starts_with($path, 'https://')

@@ -7,16 +7,19 @@ namespace App\Controllers\Admin;
 use App\Controllers\Controller;
 use App\Core\Request;
 use App\Core\Response;
+use App\Services\AdminTableService;
 use App\Services\SliderService;
 
 final class SliderController extends Controller
 {
     public function index(Request $request): Response
     {
-        return $this->renderAdmin('admin/sliders/index', [
-            'pageTitle' => 'Manage Home Sliders',
-            'slides' => (new SliderService())->getAllAdmin(),
-        ]);
+        $paginated = (new SliderService())->paginateAdmin(
+            $request->tableParams(AdminTableService::ALLOWED_PER_PAGE)
+        );
+        $table = (new AdminTableService())->buildSlidersTable($paginated);
+
+        return $this->respondAdminTable($request, 'admin/sliders/index', 'Manage Home Sliders', $table);
     }
 
     public function create(Request $request): Response

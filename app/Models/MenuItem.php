@@ -81,5 +81,32 @@ final class MenuItem extends Model
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = []): array
+    {
+        return $this->paginateSql(
+            'i.*, c.name AS category_name',
+            'menu_items i INNER JOIN menu_categories c ON c.id = i.category_id',
+            [],
+            [],
+            ['i.name', 'c.name', 'i.description', 'i.price'],
+            (string) ($options['q'] ?? ''),
+            [
+                'name' => 'i.name',
+                'category' => 'c.name',
+                'price' => 'i.price',
+                'status' => 'i.is_active',
+                'order' => 'i.sort_order',
+            ],
+            'c.sort_order ASC, i.sort_order ASC, i.id ASC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }
 

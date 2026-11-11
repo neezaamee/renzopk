@@ -59,4 +59,38 @@ final class GalleryItem extends Model
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $type = null): array
+    {
+        $where = [];
+        $params = [];
+        if ($type !== null && $type !== '') {
+            $where[] = 'type = :type';
+            $params['type'] = $type;
+        }
+
+        return $this->paginateSql(
+            '*',
+            'gallery_items',
+            $where,
+            $params,
+            ['title', 'category', 'caption', 'type'],
+            (string) ($options['q'] ?? ''),
+            [
+                'type' => 'type',
+                'title' => 'title',
+                'category' => 'category',
+                'sort_order' => 'sort_order',
+                'is_active' => 'is_active',
+            ],
+            'sort_order ASC, id DESC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }

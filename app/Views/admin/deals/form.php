@@ -3,7 +3,7 @@ $isEdit = is_array($deal);
 $toInputDatetime = static fn (?string $dt): string => ($dt !== null && $dt !== '') ? date('Y-m-d\TH:i', strtotime($dt)) : '';
 $currentType = (string) old('type', (string) ($deal['type'] ?? 'time_limited'));
 ?>
-<div class="card" style="max-width:780px;">
+<div class="card card-form">
     <form method="POST" action="<?= e(url($actionUrl)) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="form-grid">

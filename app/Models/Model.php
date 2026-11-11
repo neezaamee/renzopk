@@ -230,5 +230,108 @@ abstract class Model
 
         return $identifier;
     }
+
+    /**
+     * Execute a shared, injection-safe SQL pagination + search + sorting query compatible with MySQL and SQLite.
+     *
+     * @param list<string> $whereClauses
+     * @param array<string, mixed> $params
+     * @param list<string> $searchableColumns
+     * @param array<string, string> $sortableColumns
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    protected function paginateSql(
+        string $selectColumns,
+        string $fromClause,
+        array $whereClauses,
+        array $params,
+        array $searchableColumns,
+        string $search,
+        array $sortableColumns,
+        string $defaultOrderSql,
+        string $sortKey,
+        string $sortDir,
+        int $page,
+        int $perPage,
+        ?string $groupByClause = null,
+        ?string $countColumn = null
+    ): array {
+        $perPage = max(1, min(100, $perPage));
+        $trimmedSearch = trim($search);
+
+        $scopeWhereSql = $whereClauses === [] ? '' : ' WHERE ' . implode(' AND ', $whereClauses);
+        $countExpr = $countColumn ?? '*';
+        $totalSql = $groupByClause !== null
+            ? "SELECT COUNT(*) FROM (SELECT {$countExpr} FROM {$fromClause}{$scopeWhereSql} GROUP BY {$groupByClause}) AS _dt_total"
+            : "SELECT COUNT(*) FROM {$fromClause}{$scopeWhereSql}";
+
+        $totalStmt = $this->db->prepare($totalSql);
+        $totalStmt->execute($params);
+        $total = (int) $totalStmt->fetchColumn();
+
+        $filteredClauses = $whereClauses;
+        $filteredParams = $params;
+        if ($trimmedSearch !== '' && $searchableColumns !== []) {
+            $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], strtolower($trimmedSearch));
+            $likeValue = '%' . $escaped . '%';
+            $orParts = [];
+            foreach (array_values($searchableColumns) as $idx => $colExpr) {
+                $paramName = '_search_' . $idx;
+                $orParts[] = "LOWER(COALESCE({$colExpr}, '')) LIKE :{$paramName} ESCAPE '!'";
+                $filteredParams[$paramName] = $likeValue;
+            }
+            $filteredClauses[] = '(' . implode(' OR ', $orParts) . ')';
+        }
+
+        $filteredWhereSql = $filteredClauses === [] ? '' : ' WHERE ' . implode(' AND ', $filteredClauses);
+        if ($trimmedSearch === '') {
+            $filtered = $total;
+        } else {
+            $filteredSql = $groupByClause !== null
+                ? "SELECT COUNT(*) FROM (SELECT {$countExpr} FROM {$fromClause}{$filteredWhereSql} GROUP BY {$groupByClause}) AS _dt_filtered"
+                : "SELECT COUNT(*) FROM {$fromClause}{$filteredWhereSql}";
+            $filteredStmt = $this->db->prepare($filteredSql);
+            $filteredStmt->execute($filteredParams);
+            $filtered = (int) $filteredStmt->fetchColumn();
+        }
+
+        $totalPages = max(1, (int) ceil($filtered / $perPage));
+        $currentPage = max(1, min($page, $totalPages));
+        $offset = ($currentPage - 1) * $perPage;
+
+        $resolvedSort = isset($sortableColumns[$sortKey]) ? $sortKey : '';
+        $resolvedDir = strtolower($sortDir) === 'desc' ? 'desc' : 'asc';
+        $orderSql = $resolvedSort !== ''
+            ? $sortableColumns[$resolvedSort] . ' ' . strtoupper($resolvedDir) . ', ' . $defaultOrderSql
+            : $defaultOrderSql;
+
+        $groupSql = $groupByClause !== null ? " GROUP BY {$groupByClause}" : '';
+        $dataSql = "SELECT {$selectColumns} FROM {$fromClause}{$filteredWhereSql}{$groupSql} ORDER BY {$orderSql} LIMIT :_dt_limit OFFSET :_dt_offset";
+
+        $stmt = $this->db->prepare($dataSql);
+        foreach ($filteredParams as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':_dt_limit', $perPage, \PDO::PARAM_INT);
+        $stmt->bindValue(':_dt_offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return [
+            'items' => $stmt->fetchAll(),
+            'pagination' => [
+                'page' => $currentPage,
+                'per_page' => $perPage,
+                'total' => $total,
+                'filtered' => $filtered,
+                'total_pages' => $totalPages,
+                'from' => $filtered === 0 ? 0 : ($offset + 1),
+                'to' => min($offset + $perPage, $filtered),
+                'sort' => $resolvedSort,
+                'dir' => $resolvedDir,
+                'search' => $trimmedSearch,
+                'pages' => pagination_window($currentPage, $totalPages),
+            ],
+        ];
+    }
 }
 

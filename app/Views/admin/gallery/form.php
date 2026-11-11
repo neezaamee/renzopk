@@ -3,7 +3,7 @@ $isEdit = is_array($item);
 $currentType = (string) old('type', (string) ($item['type'] ?? 'photo'));
 $currentCat = (string) old('category', (string) ($item['category'] ?? 'Food'));
 ?>
-<div class="card" style="max-width:680px;">
+<div class="card card-form">
     <form method="POST" action="<?= e(url($actionUrl)) ?>" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <div class="form-grid">

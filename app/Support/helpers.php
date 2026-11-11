@@ -63,7 +63,61 @@ if (!function_exists('url')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        return url('/assets/' . ltrim($path, '/'));
+        $trimmed = ltrim($path, '/');
+        $fullPath = base_path('public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $trimmed));
+        $version = is_file($fullPath) ? '?v=' . filemtime($fullPath) : '';
+
+        return url('/assets/' . $trimmed) . $version;
+    }
+}
+
+if (!function_exists('query_url')) {
+    function query_url(string $path, array $params = []): string
+    {
+        $filtered = array_filter(
+            $params,
+            static fn (mixed $v): bool => $v !== null && $v !== ''
+        );
+        $base = url($path);
+
+        return $filtered === [] ? $base : $base . '?' . http_build_query($filtered);
+    }
+}
+
+if (!function_exists('pagination_window')) {
+    /**
+     * @return list<int|string>
+     */
+    function pagination_window(int $currentPage, int $totalPages): array
+    {
+        if ($totalPages <= 7) {
+            return $totalPages <= 1 ? [1] : range(1, $totalPages);
+        }
+
+        $pages = [1];
+        $start = max(2, $currentPage - 1);
+        $end = min($totalPages - 1, $currentPage + 1);
+
+        if ($currentPage <= 3) {
+            $start = 2;
+            $end = 4;
+        } elseif ($currentPage >= $totalPages - 2) {
+            $start = $totalPages - 3;
+            $end = $totalPages - 1;
+        }
+
+        if ($start > 2) {
+            $pages[] = '...';
+        }
+        for ($i = $start; $i <= $end; $i++) {
+            $pages[] = $i;
+        }
+        if ($end < $totalPages - 1) {
+            $pages[] = '...';
+        }
+        $pages[] = $totalPages;
+
+        return $pages;
     }
 }
 

@@ -51,5 +51,38 @@ final class ContactMessage extends Model
         );
         $stmt->execute(['id' => $id]);
     }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, pagination: array<string, mixed>}
+     */
+    public function paginateAdmin(array $options = [], ?string $filter = null): array
+    {
+        $where = [];
+        if ($filter === 'unread') {
+            $where[] = 'is_read = 0';
+        } elseif ($filter === 'career') {
+            $where[] = "inquiry_type = 'career'";
+        }
+
+        return $this->paginateSql(
+            '*',
+            'contact_messages',
+            $where,
+            [],
+            ['name', 'email', 'phone', 'subject', 'inquiry_type', 'message'],
+            (string) ($options['q'] ?? ''),
+            [
+                'is_read' => 'is_read',
+                'name' => 'name',
+                'inquiry_type' => 'inquiry_type',
+                'created_at' => 'created_at',
+            ],
+            'created_at DESC, id DESC',
+            (string) ($options['sort'] ?? ''),
+            (string) ($options['dir'] ?? 'asc'),
+            (int) ($options['page'] ?? 1),
+            (int) ($options['per_page'] ?? 10)
+        );
+    }
 }
 

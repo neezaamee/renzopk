@@ -41,7 +41,7 @@ CREATE TABLE tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT, c
 CREATE TABLE menu_item_tags (menu_item_id INTEGER, tag_id INTEGER);
 CREATE TABLE deals (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, slug TEXT, description TEXT, type TEXT, discount_label TEXT, coupon_code TEXT, image_path TEXT, start_datetime TEXT, end_datetime TEXT, is_active INTEGER DEFAULT 1, sort_order INTEGER DEFAULT 0);
 CREATE TABLE reservations (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_name TEXT, customer_email TEXT, customer_phone TEXT, party_size INTEGER, reservation_date TEXT, reservation_time TEXT, special_requests TEXT, status TEXT DEFAULT "new", admin_notes TEXT NULL, handled_by_admin_id INTEGER NULL);
-CREATE TABLE contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, subject TEXT, inquiry_type TEXT, message TEXT, is_read INTEGER DEFAULT 0, read_at TEXT NULL, ip_address TEXT NULL);
+CREATE TABLE contact_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, phone TEXT, subject TEXT, inquiry_type TEXT, message TEXT, is_read INTEGER DEFAULT 0, read_at TEXT NULL, ip_address TEXT NULL, created_at TEXT DEFAULT "2026-11-10 20:30:00");
 CREATE TABLE gallery_items (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT DEFAULT "photo", title TEXT, caption TEXT, category TEXT, image_path TEXT, youtube_id TEXT, alt_text TEXT, sort_order INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1);
 CREATE TABLE slider_items (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, subtitle TEXT, cta_text TEXT, cta_url TEXT, image_path TEXT, alt_text TEXT, sort_order INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1);
 CREATE TABLE settings (id INTEGER PRIMARY KEY AUTOINCREMENT, setting_key TEXT UNIQUE, setting_value TEXT, setting_group TEXT, updated_by_admin_id INTEGER);
@@ -255,6 +255,124 @@ $phpmailerTest = new PHPMailer\PHPMailer\PHPMailer(true);
 (new App\Services\MailService())->configureMailer($phpmailerTest);
 $assert($phpmailerTest->Mailer === 'sendmail' && $phpmailerTest->From === 'no-reply@renzopk.com', 'MailService supports sendmail and defaults From to MAIL_USERNAME');
 $_ENV = $prevEnv;
+
+// 10. Dynamic hero slider (no dark gap / no lazy image inside hero)
+$assert(str_contains($homeBody, 'data-hero-slider') && str_contains($homeBody, 'is-active') && !str_contains($homeBody, 'hero-radio'), 'Home hero uses dynamic JS/CSS crossfade slider');
+$homeWithSlideImg = App\Core\View::render('public/home', [
+    'pageTitle' => 'Home',
+    'settings' => ['restaurant_name' => 'Renzo'],
+    'slides' => [
+        ['title' => 'Slide 1', 'subtitle' => 'First', 'cta_text' => 'Menu', 'cta_url' => '/menu', 'image_path' => 'sliders/a.webp', 'alt_text' => 'One'],
+        ['title' => 'Slide 2', 'subtitle' => 'Second', 'cta_text' => 'Deals', 'cta_url' => '/deals', 'image_path' => 'sliders/b.webp', 'alt_text' => 'Two'],
+    ],
+    'menuPreview' => [],
+    'activeDeals' => [],
+    'galleryTiles' => [],
+], 'layouts/main');
+$heroSectionEnd = strpos($homeWithSlideImg, '</section>');
+$heroSlice = $heroSectionEnd !== false ? substr($homeWithSlideImg, 0, $heroSectionEnd) : '';
+$assert($heroSlice !== '' && !str_contains($heroSlice, 'loading="lazy"') && str_contains($heroSlice, 'sliders/b.webp'), 'Hero slide images load eagerly without lazy-load flash');
+
+// 11. Admin server-side pagination, search, sorting & AJAX DataTable checks
+$menuSvc->saveCategory(null, ['name' => 'Mains', 'is_active' => '1']);
+$menuItemModel = new App\Models\MenuItem($pdo);
+for ($i = 1; $i <= 14; $i++) {
+    $menuItemModel->create([
+        'category_id' => $catId,
+        'name' => sprintf('Dish %02d', $i),
+        'slug' => sprintf('dish-%02d', $i),
+        'price' => 500 + $i * 50,
+        'is_active' => 1,
+        'is_available' => 1,
+        'sort_order' => $i,
+    ]);
+}
+
+$page2 = $menuSvc->paginateItemsAdmin(['page' => 2, 'per_page' => 10, 'q' => '', 'sort' => 'name', 'dir' => 'desc']);
+$assert(
+    $page2['pagination']['total'] === 15
+    && $page2['pagination']['filtered'] === 15
+    && $page2['pagination']['total_pages'] === 2
+    && $page2['pagination']['from'] === 11
+    && $page2['pagination']['to'] === 15
+    && count($page2['items']) === 5,
+    'Menu pagination returns exact page 2 slice and totals'
+);
+
+$clamped = $menuSvc->paginateItemsAdmin(['page' => 99, 'per_page' => 10, 'q' => 'Truffle', 'sort' => '', 'dir' => 'asc']);
+$assert(
+    $clamped['pagination']['page'] === 1
+    && $clamped['pagination']['filtered'] === 1
+    && count($clamped['items']) === 1
+    && $clamped['items'][0]['name'] === 'Truffle Bruschetta',
+    'Pagination clamps overflow pages and filters accurately by search'
+);
+
+$likeInjection = $menuSvc->paginateItemsAdmin(['page' => 1, 'per_page' => 10, 'q' => '100%', 'sort' => '', 'dir' => 'asc']);
+$assert($likeInjection['pagination']['filtered'] === 0, 'LIKE wildcards in search query are safely escaped');
+
+// Cross-check paginateAdmin SQL on categories, tags, deals, gallery, sliders, reservations, messages, admins
+$tableSvc = new App\Services\AdminTableService();
+$menuTable = $tableSvc->buildMenuItemsTable($page2, 'Rs. ');
+$assert(count($menuTable['rows']) === 5 && count($menuTable['rows'][0]['cells']) === 6, 'AdminTableService builds structured menu rows');
+
+$catModel = new App\Models\MenuCategory($pdo);
+$catPag = $catModel->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => 'items_count', 'dir' => 'desc']);
+$assert($catPag['pagination']['total'] === 2 && (int) $catPag['items'][0]['items_count'] === 15, 'MenuCategory::paginateAdmin supports GROUP BY and items_count sort');
+
+$resPag = (new App\Models\Reservation($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc'], 'new');
+$msgPag = (new App\Models\ContactMessage($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc'], 'unread');
+$dealPag = (new App\Models\Deal($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc']);
+$galPag = (new App\Models\GalleryItem($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc']);
+$sldPag = (new App\Models\SliderItem($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc']);
+$tagPag = (new App\Models\Tag($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc']);
+$admPag = (new App\Models\Admin($pdo))->paginateAdmin(['page' => 1, 'per_page' => 10, 'q' => '', 'sort' => '', 'dir' => 'asc']);
+$assert(
+    $dealPag['pagination']['total'] === 2
+    && $sldPag['pagination']['total'] === 1
+    && $admPag['pagination']['total'] === 2
+    && is_array($resPag['items'])
+    && is_array($msgPag['items'])
+    && is_array($galPag['items'])
+    && is_array($tagPag['items']),
+    'All 9 admin resources support server-side pagination queries'
+);
+
+// Unauthenticated AJAX DataTable request returns 401 JSON instead of HTML redirect
+$unauthAjax = $router->dispatch(new App\Core\Request(
+    'GET',
+    '/admin/menu',
+    ['format' => 'json', 'page' => '2'],
+    [],
+    [],
+    ['HTTP_HOST' => 'renzo.test', 'HTTPS' => 'on', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']
+));
+$unauthJson = json_decode($rfContent->getValue($unauthAjax), true);
+$assert(
+    $rfStatus->getValue($unauthAjax) === 401
+    && is_array($unauthJson)
+    && str_contains((string) ($unauthJson['redirect'] ?? ''), '/admin/login'),
+    'Unauthenticated AJAX DataTable request returns 401 JSON redirect'
+);
+
+// Responsive CMS layout & DataTable view render cleanly
+$adminHtml = App\Core\View::render('admin/menu/index', [
+    'pageTitle' => 'Manage Menu Items',
+    'tableConfig' => $menuTable,
+    'currentAdmin' => ['id' => 1, 'name' => 'Owner', 'role' => 'owner'],
+    'settings' => ['restaurant_name' => 'Renzo'],
+], 'layouts/admin');
+$assert(
+    str_contains($adminHtml, 'meta name="csrf-token"')
+    && str_contains($adminHtml, 'data-admin-nav-open')
+    && str_contains($adminHtml, 'data-datatable')
+    && str_contains($adminHtml, 'data-label="Dish"')
+    && str_contains($adminHtml, 'js/admin.js')
+    && str_contains($adminHtml, 'css/admin.css'),
+    'Responsive CMS layout and DataTable HTML render cleanly'
+);
+
+@unlink($pdfPath);
 
 echo "TESTS PASSED: $passed assertions\n";
 
