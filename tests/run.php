@@ -223,5 +223,15 @@ $openRedirectResp = $router->dispatch(new App\Core\Request('POST', '/reservation
 $location = $rfHeaders->getValue($openRedirectResp)['Location'] ?? '';
 $assert(!str_contains($location, 'evil.com'), 'Protocol-relative //evil.com redirect blocked');
 
+// 9. MailService driver selection & sender alignment
+$prevEnv = $_ENV;
+$_ENV['MAIL_MAILER'] = 'sendmail';
+$_ENV['MAIL_USERNAME'] = 'no-reply@renzopk.com';
+$_ENV['MAIL_FROM_ADDRESS'] = '';
+$phpmailerTest = new PHPMailer\PHPMailer\PHPMailer(true);
+(new App\Services\MailService())->configureMailer($phpmailerTest);
+$assert($phpmailerTest->Mailer === 'sendmail' && $phpmailerTest->From === 'no-reply@renzopk.com', 'MailService supports sendmail and defaults From to MAIL_USERNAME');
+$_ENV = $prevEnv;
+
 echo "TESTS PASSED: $passed assertions\n";
 

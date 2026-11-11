@@ -106,33 +106,7 @@ class MailService
         $mailer = new PHPMailer(true);
 
         try {
-            $mailer->isSMTP();
-            $mailer->Host = (string) Env::get('MAIL_HOST', '127.0.0.1');
-            $mailer->Port = (int) Env::get('MAIL_PORT', 587);
-
-            $username = (string) (Env::get('MAIL_USERNAME', '') ?? '');
-            $password = (string) (Env::get('MAIL_PASSWORD', '') ?? '');
-            $mailer->SMTPAuth = $username !== '';
-            if ($mailer->SMTPAuth) {
-                $mailer->Username = $username;
-                $mailer->Password = $password;
-            }
-
-            $encryption = strtolower((string) (Env::get('MAIL_ENCRYPTION', 'tls') ?? ''));
-            if ($encryption === 'ssl' || $encryption === 'smtps') {
-                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            } elseif ($encryption === 'tls' || $encryption === 'starttls') {
-                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            } else {
-                $mailer->SMTPSecure = '';
-                $mailer->SMTPAutoTLS = false;
-            }
-
-            $fromAddress = (string) Env::get('MAIL_FROM_ADDRESS', 'noreply@renzo.example');
-            $fromName = (string) Env::get('MAIL_FROM_NAME', 'Renzo Restaurant');
-
-            $mailer->CharSet = 'UTF-8';
-            $mailer->setFrom($fromAddress, $fromName);
+            $this->configureMailer($mailer);
             $mailer->addAddress($toEmail, $toName);
             $mailer->isHTML(true);
             $mailer->Subject = $subject;
@@ -143,5 +117,49 @@ class MailService
         } catch (PHPMailerException $e) {
             throw new RuntimeException('Unable to send email: ' . $e->getMessage(), 0, $e);
         }
+    }
+
+    public function configureMailer(PHPMailer $mailer): void
+    {
+        $driver = strtolower(trim((string) Env::get('MAIL_MAILER', 'smtp')));
+        if ($driver === 'sendmail') {
+            $mailer->isSendmail();
+        } elseif ($driver === 'mail') {
+            $mailer->isMail();
+        } else {
+            $mailer->isSMTP();
+            $mailer->Host = trim((string) Env::get('MAIL_HOST', '127.0.0.1'));
+            $mailer->Port = (int) Env::get('MAIL_PORT', 587);
+
+            $username = trim((string) (Env::get('MAIL_USERNAME', '') ?? ''));
+            $password = (string) (Env::get('MAIL_PASSWORD', '') ?? '');
+            $mailer->SMTPAuth = $username !== '';
+            if ($mailer->SMTPAuth) {
+                $mailer->Username = $username;
+                $mailer->Password = $password;
+            }
+
+            $encryption = strtolower(trim((string) (Env::get('MAIL_ENCRYPTION', 'tls') ?? '')));
+            if ($encryption === 'ssl' || $encryption === 'smtps') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } elseif ($encryption === 'tls' || $encryption === 'starttls') {
+                $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } else {
+                $mailer->SMTPSecure = '';
+                $mailer->SMTPAutoTLS = false;
+            }
+        }
+
+        $configuredFrom = trim((string) (Env::get('MAIL_FROM_ADDRESS', '') ?? ''));
+        $smtpUser = trim((string) (Env::get('MAIL_USERNAME', '') ?? ''));
+        if (($configuredFrom === '' || $configuredFrom === 'noreply@renzo.example') && filter_var($smtpUser, FILTER_VALIDATE_EMAIL)) {
+            $fromAddress = $smtpUser;
+        } else {
+            $fromAddress = $configuredFrom !== '' ? $configuredFrom : 'noreply@renzo.example';
+        }
+        $fromName = trim((string) Env::get('MAIL_FROM_NAME', 'Renzo Restaurant')) ?: 'Renzo Restaurant';
+
+        $mailer->CharSet = 'UTF-8';
+        $mailer->setFrom($fromAddress, $fromName);
     }
 }
